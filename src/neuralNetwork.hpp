@@ -57,7 +57,7 @@ public:
     explicit neuralNetwork(int psize_x, int psize_y, int pchannel, int pparallel, const string &i_filename);
     neuralNetwork(int psize, int pchannel, int pparallel, int kernel_size, int sec_size, int fc_size,
                   int start_channel, convType conv_ty, poolType pool_ty);
-    void create(layeredCircuit &C);
+    void create(circuit &C);
 
 protected:
 
@@ -69,10 +69,10 @@ protected:
     void refreshFCParam(const fconKernel &fc);
 
     [[nodiscard]] i64 getPoolDecmpSize() const;
-    void prepareBit(layeredCircuit &C, i64 data, i64 dcmp_id, i64 bit_shift);
-    void prepareSignBit(layeredCircuit &C, i64 data, i64 &dcmp_id);
-    void prepareMax(layeredCircuit &C, i64 data, i64 &max_id);
-    i64 updateGate(layeredCircuit &C, GateType ty, i64 u, i64 v, bool is_assert = false);
+    void prepareBit(circuit &C, i64 data, i64 &dcmp_id, i64 bit_shift);
+    void prepareSignBit(circuit &C, i64 data, i64 &dcmp_id);
+    void prepareMax(circuit &C, i64 data, i64 &max_id);
+    i64 updateGate(circuit &C, GateType ty, i64 u, i64 v, bool is_assert = false);
 
     vector<vector<convKernel>> conv_section;
     vector<poolKernel> pool;
@@ -93,20 +93,20 @@ protected:
     vector<i64> val;
     vector<i64>::iterator two_mul;
 
-    vector<vector<vector<i64>>> inputLayer(layeredCircuit &C);
-    vector<vector<vector<i64>>> naiveConvLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data);
-    vector<vector<vector<i64>>> reluActConvLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data);
-    vector<i64> reluActFconLayer(layeredCircuit &C, const vector<i64> &data);
-    vector<vector<vector<i64>>> avgPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data);
-    vector<vector<vector<i64>>> maxPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data);
-    vector<i64> fullyConnLayer(layeredCircuit &C, const vector<i64> &data);
-    i64 multiOpt(layeredCircuit &C, GateType ty, const vector<i64> &list, bool is_assert = false);
-    vector<i64> equalCheck(layeredCircuit &C, const vector<i64> &data, const vector<vector<i64>> &bits, bool has_sign, bool need_neg);
-    vector<vector<i64>> bitCheck(layeredCircuit &C, const vector<vector<i64>> &bits);
-    vector<i64> rescaleData(layeredCircuit &C, const vector<vector<i64>> &bits, bool has_sign);
-    vector<vector<i64>> bitDecomposition(layeredCircuit &C, const vector<i64> &data, int nbits, bool has_sign);
-    vector<vector<i64>> bitValueDecomposition(layeredCircuit &C, const vector<i64> &data, int nbits, bool has_sign);
-    vector<vector<i64>> scaledBits(layeredCircuit &C, const vector<vector<i64>> &bits, bool neg);
+    vector<vector<vector<i64>>> inputLayer(circuit &C);
+    vector<vector<vector<i64>>> naiveConvLayer(circuit &C, const vector<vector<vector<i64>>> &data);
+    vector<vector<vector<i64>>> reluActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data);
+    vector<i64> reluActFconLayer(circuit &C, const vector<i64> &data);
+    vector<vector<vector<i64>>> avgPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data);
+    vector<vector<vector<i64>>> maxPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data);
+    vector<i64> fullyConnLayer(circuit &C, const vector<i64> &data);
+    i64 multiOpt(circuit &C, GateType ty, const vector<i64> &list, bool is_assert = false);
+    vector<i64> equalCheck(circuit &C, const vector<i64> &data, const vector<vector<i64>> &bits, bool has_sign, bool need_neg);
+    vector<vector<i64>> bitCheck(circuit &C, const vector<vector<i64>> &bits);
+    vector<i64> rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign);
+    vector<vector<i64>> bitDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign);
+    vector<vector<i64>> bitValueDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign);
+    vector<vector<i64>> scaledBits(circuit &C, const vector<vector<i64>> &bits, bool neg);
 };
 
 

@@ -16,7 +16,8 @@ int main(int argc, char **argv) {
     mode = argv[MODE];
 //    vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
     lenet model(28, 28, 1, 1, NAIVE, MAX, argv[IN]);
-    layeredCircuit C;
+//    ccnn model(4, 4, 1, 1, MAX, "");
+    circuit C;
     model.create(C);
 
     C.print(argv[INS_FILE], argv[WIT_FILE], argv[REL_FILE]);

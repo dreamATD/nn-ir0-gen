@@ -6,7 +6,7 @@
 
 using std::ofstream;
 
-void layeredCircuit::init(int q_bit_size) {
+void circuit::init(int q_bit_size) {
     two_mul.resize((q_bit_size + 1) << 1);
     two_mul[0] = 1;
     two_mul[q_bit_size + 1] = -1;
@@ -16,7 +16,7 @@ void layeredCircuit::init(int q_bit_size) {
     }
 }
 
-void layeredCircuit::print(char *ins_file, char *wit_file, char *rel_file) {
+void circuit::print(char *ins_file, char *wit_file, char *rel_file) {
     ofstream ins(ins_file), wit(wit_file), rel(rel_file);
     rel << "// Header start\n"
         << "version 1.0.0;\n"
@@ -38,11 +38,11 @@ void layeredCircuit::print(char *ins_file, char *wit_file, char *rel_file) {
         auto &gate = gates[g];
         switch (gate.ty) {
             case Ins:
-                ins << string_format("< %llu >;\n", convert2Unsigned(gate.u));
+                ins << string_format("< %lld >;\n", gate.u);
                 rel << string_format("$%lld<-@instance;\n", g);
                 break;
             case Wit:
-                wit << string_format("< %lld >;\n", convert2Unsigned(gate.u));
+                wit << string_format("< %lld >;\n", gate.u);
                 rel << string_format("$%lld<-@short_witness;\n", g);
                 break;
             case Add:
@@ -52,10 +52,10 @@ void layeredCircuit::print(char *ins_file, char *wit_file, char *rel_file) {
                 rel << string_format("$%lld <- @mul($%lld,$%lld);\n", g, gate.u, gate.v);
                 break;
             case Addc:
-                rel << string_format("$%lld <- @addc($%lld,< %lld >);\n", g, gate.u, convert2Unsigned(gate.v));
+                rel << string_format("$%lld <- @addc($%lld,< %lld >);\n", g, gate.u, gate.v);
                 break;
             case Mulc:
-                rel << string_format("$%lld <- @mulc($%lld,< %lld >);\n", g, gate.u, convert2Unsigned(gate.v));
+                rel << string_format("$%lld <- @mulc($%lld,< %lld >);\n", g, gate.u, gate.v);
                 break;
             case Xor:
                 rel << string_format("$%lld <- @xor($%lld,$%lld);\n", g, gate.u, gate.v);

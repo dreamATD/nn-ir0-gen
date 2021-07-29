@@ -125,7 +125,7 @@ vgg11::vgg11(i64 psize_x, i64 psize_y, i64 pchannel, i64 pparallel, convType con
 }
 
 ccnn::ccnn(i64 psize_x, i64 psize_y, i64 pparallel, i64 pchannel, poolType pool_ty,
-           const std::string &filename) : neuralNetwork(psize_x, psize_y, pchannel, pparallel, "") {
+           const std::string &filename) : neuralNetwork(psize_x, psize_y, pchannel, pparallel, filename) {
     conv_section.resize(1);
 
     conv_section[0].emplace_back(NAIVE_FAST, 2,  pchannel, 3, 0, 0);

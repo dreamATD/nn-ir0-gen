@@ -39,9 +39,4 @@ i64 tesIdx(i64 w, i64 x, i64 y, i64 z, i64 n, i64 m, i64 l) {
     return matIdx(cubIdx(w, x, y, n, m), z, l);
 }
 
-u64 convert2Unsigned(i64 x) {
-    static u64 mod = (1ULL << 61) - 1;
-    return (x % mod + mod) % mod;
-}
-
 

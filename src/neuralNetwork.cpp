@@ -59,7 +59,7 @@ vector<i64> flatten(const vector<vector<vector<i64>>> &data, const string &speci
     return res;
 }
 
-void neuralNetwork::create(layeredCircuit &C) {
+void neuralNetwork::create(circuit &C) {
     assert(pool.size() >= conv_section.size() - 1);
 
     C.init(Q_BIT_SIZE);
@@ -76,7 +76,8 @@ void neuralNetwork::create(layeredCircuit &C) {
             refreshConvParam(new_nx_in, new_ny_in, conv);
             pool_ty = i < pool.size() && j == sec.size() - 1 ? pool[i].ty : NONE;
             data = naiveConvLayer(C, data);
-            data = reluActConvLayer(C, data);
+            if (j != sec.size() - 1)
+                data = reluActConvLayer(C, data);
         }
         calcSizeAfterPool(pool[i]);
         data = maxPoolingLayer(C, data);
@@ -95,13 +96,12 @@ void neuralNetwork::create(layeredCircuit &C) {
     cerr << "finish creating circuit." << endl;
 }
 
-i64 neuralNetwork::updateGate(layeredCircuit &C, GateType ty, i64 u, i64 v, bool is_assert) {
-    static i64 mod = (1LL << 61) - 1;
+i64 neuralNetwork::updateGate(circuit &C, GateType ty, i64 u, i64 v, bool is_assert) {
     i64 res;
     double num;
     switch (ty) {
         case Ins:
-            in >> num;
+            if (!(in >> num)) num = 1;
             res = i64(num * exp2(SCALE));
             u = res;
             break;
@@ -109,16 +109,16 @@ i64 neuralNetwork::updateGate(layeredCircuit &C, GateType ty, i64 u, i64 v, bool
             res = u;
             break;
         case Add:
-            res = (val[u] + val[v]) % mod;
+            res = (val[u] + val[v]);
             break;
         case Mul:
-            res = (i128) val[u] * val[v] % mod;
+            res = (i128) val[u] * val[v];
             break;
         case Addc:
-            res = (val[u] + v) % mod;
+            res = (val[u] + v);
             break;
         case Mulc:
-            res = (i128) val[u] * v % mod;
+            res = val[u] * v;
             break;
 //        case And:
 //            res = val[u] & val[v];
@@ -139,7 +139,7 @@ i64 neuralNetwork::updateGate(layeredCircuit &C, GateType ty, i64 u, i64 v, bool
     return C.gates.size() - 1;
 }
 
-i64 neuralNetwork::multiOpt(layeredCircuit &C, GateType ty, const vector<i64> &list, bool is_assert) {
+i64 neuralNetwork::multiOpt(circuit &C, GateType ty, const vector<i64> &list, bool is_assert) {
     auto vec = list;
     while (vec.size() > 1) {
         for (int i = 0; i < vec.size(); ++i) {
@@ -155,7 +155,7 @@ i64 neuralNetwork::multiOpt(layeredCircuit &C, GateType ty, const vector<i64> &l
     return vec[0];
 }
 
-vector<i64> neuralNetwork::equalCheck(layeredCircuit &C, const vector<i64> &data, const vector<vector<i64>> &bits, bool has_sign, bool need_neg) {
+vector<i64> neuralNetwork::equalCheck(circuit &C, const vector<i64> &data, const vector<vector<i64>> &bits, bool has_sign, bool need_neg) {
     vector<i64> data_p;
     if (has_sign) {
         // equal check: 2 * sign_bit
@@ -193,7 +193,7 @@ vector<i64> neuralNetwork::equalCheck(layeredCircuit &C, const vector<i64> &data
     return equal_check;
 }
 
-vector<vector<i64>> neuralNetwork::bitCheck(layeredCircuit &C, const vector<vector<i64>> &bits) {
+vector<vector<i64>> neuralNetwork::bitCheck(circuit &C, const vector<vector<i64>> &bits) {
     // bit check: bit - 1
     i64 size = bits.size();
     vector<vector<i64>> bits_1(size);
@@ -215,7 +215,7 @@ vector<vector<i64>> neuralNetwork::bitCheck(layeredCircuit &C, const vector<vect
     return bit_check;
 }
 
-vector<i64> neuralNetwork::rescaleData(layeredCircuit &C, const vector<vector<i64>> &bits, bool has_sign) {
+vector<i64> neuralNetwork::rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign) {
     // rescale: -sign_bit
     i64 size = bits.size();
     vector<i64> neg_sign_bit(size);
@@ -233,21 +233,36 @@ vector<i64> neuralNetwork::rescaleData(layeredCircuit &C, const vector<vector<i6
     vector<i64> rescale(size);
     for (i64 i = 0; i < size; ++i) {
         vector<i64> tmp(Q_MAX - 1 - T);
-        for (int j = 1; j < Q_MAX - T; ++j)
-            tmp[j] = updateGate(C, Mulc, bits[i][j], two_mul[Q_MAX - j - T - 1]);
+        for (int j = 1; j < Q_MAX - T; ++j) {
+            tmp[j - 1] = updateGate(C, Mulc, bits[i][j], two_mul[Q_MAX - j - T - 1]);
+//            fprintf(stderr, "%lld %lld %lld %d\n", val[tmp[j]], val[bits[i][j]], two_mul[Q_MAX - j - T - 1], Q_MAX - j - T - 1);
+        }
         rescale[i] = multiOpt(C, Add, tmp);
     }
 
-    if (!has_sign) return rescale;
+    if (!has_sign) {
+//        fprintf(stderr, "rescale: \n");
+//        for (auto x: rescale) {
+//            fprintf(stderr, "%lld ", val[x]);
+//        }
+//        fprintf(stderr, "\n");
+        return rescale;
+    }
     vector<i64> sign_rescale(size);
 
     // rescale: (-sign_bit + 1) (2^0 * data_bit_T + ... + 2^{Q_MAX-2-T} * data_bit_{Q_MAX-2})
     for (i64 i = 0; i < size; ++i)
         sign_rescale[i] = updateGate(C, Mul, neg_sign_bit_1[i], rescale[i]);
+
+//    fprintf(stderr, "rescale: \n");
+//    for (auto x: sign_rescale) {
+//        fprintf(stderr, "%lld ", val[x]);
+//    }
+//    fprintf(stderr, "\n");
     return sign_rescale;
 }
 
-vector<vector<i64>> neuralNetwork::bitDecomposition(layeredCircuit &C, const vector<i64> &data, int nbits, bool has_sign) {
+vector<vector<i64>> neuralNetwork::bitDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign) {
     // bit decomposition
     if (!has_sign) nbits += 1;
     vector<vector<i64>> bits(data.size());
@@ -260,10 +275,17 @@ vector<vector<i64>> neuralNetwork::bitDecomposition(layeredCircuit &C, const vec
             prepareBit(C, val[data[i]], bits[i][j], nbits - 1 - j);
         }
     }
+//    fprintf(stderr, "Bits:\n");
+//    for (i64 i = 0; i < data.size(); ++i) {
+//        fprintf(stderr, "(%lld): ", val[data[i]]);
+//        for (i64 j = 0; j < nbits; ++j)
+//            fprintf(stderr, "%lld ", val[bits[i][j]]);
+//        fprintf(stderr, "\n");
+//    }
     return bits;
 }
 
-vector<vector<i64>> neuralNetwork::bitValueDecomposition(layeredCircuit &C, const vector<i64> &data, int nbits, bool has_sign) {
+vector<vector<i64>> neuralNetwork::bitValueDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign) {
     // bit decomposition
     if (!has_sign) nbits += 1;
     vector<vector<i64>> bits(data.size());
@@ -279,7 +301,7 @@ vector<vector<i64>> neuralNetwork::bitValueDecomposition(layeredCircuit &C, cons
     return bits;
 }
 
-vector<vector<i64>> neuralNetwork::scaledBits(layeredCircuit &C, const vector<vector<i64>> &bits, bool neg) {
+vector<vector<i64>> neuralNetwork::scaledBits(circuit &C, const vector<vector<i64>> &bits, bool neg) {
     vector<vector<i64>> cbits(bits.size());
     for (i64 i = 0; i < bits.size(); ++i) {
         cbits[i].resize(bits[i].size());
@@ -291,9 +313,8 @@ vector<vector<i64>> neuralNetwork::scaledBits(layeredCircuit &C, const vector<ve
     return cbits;
 }
 
-vector<vector<vector<i64>>> neuralNetwork::inputLayer(layeredCircuit &C) {
+vector<vector<vector<i64>>> neuralNetwork::inputLayer(circuit &C) {
     vector<vector<vector<i64>>> res(pic_channel);
-    double num;
     if (mode == "nchw") {
         for (int ci = 0; ci < pic_channel; ++ci) {
             res[ci].resize(pic_size_x);
@@ -320,7 +341,7 @@ vector<vector<vector<i64>>> neuralNetwork::inputLayer(layeredCircuit &C) {
 }
 
 vector<vector<vector<i64>>>
-neuralNetwork::naiveConvLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data) {
+neuralNetwork::naiveConvLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
     // read convolution kernel
     vector<vector<vector<vector<i64>>>> ker(channel_out);
     if (mode == "nchw") {
@@ -359,6 +380,8 @@ neuralNetwork::naiveConvLayer(layeredCircuit &C, const vector<vector<vector<i64>
     vector<i64> bias(channel_out);
     for (int co = 0; co < channel_out; ++co) {
         bias[co] = updateGate(C, Ins, 0, 0);
+        val[bias[co]] <<= SCALE;
+        C.gates[bias[co]].u <<= SCALE;
     }
 
     fprintf(stderr, "bias size: %d\n", channel_out);
@@ -377,8 +400,10 @@ neuralNetwork::naiveConvLayer(layeredCircuit &C, const vector<vector<vector<i64>
                             if (check(tx, ty, nx_in, ny_in)) {
                                 res[co][(x - L) >> log_stride][(y - L) >> log_stride].push_back(
                                         updateGate(C, Mul, data[ci][tx][ty], ker[co][ci][tx - x][ty - y]));
+//                                fprintf(stderr, "%lld ", val.back());
                             }
                 res[co][(x - L) >> log_stride][(y - L) >> log_stride].push_back(bias[co]);
+//                fprintf(stderr, "\n");
             }
         }
     }
@@ -391,15 +416,17 @@ neuralNetwork::naiveConvLayer(layeredCircuit &C, const vector<vector<vector<i64>
             new_data[co][x].resize(ny_out);
             for (int y = 0; y < ny_out; ++y) {
                 new_data[co][x][y] = multiOpt(C, Add, res[co][x][y]);
+//                fprintf(stderr, "%lld ", val[new_data[co][x][y]]);
             }
         }
     }
+//    fprintf(stderr, "\n");
 
     fprintf(stderr, "naiveConvLayer: %lu\n", new_data.size());
     return new_data;
 }
 
-vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data) {
+vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
     // flatten
     auto lst = flatten(data, "");
     auto bits = bitDecomposition(C, lst, Q_MAX, true);
@@ -427,7 +454,7 @@ vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(layeredCircuit &C, c
     return new_data;
 }
 
-vector<i64> neuralNetwork::reluActFconLayer(layeredCircuit &C, const vector<i64> &data) {
+vector<i64> neuralNetwork::reluActFconLayer(circuit &C, const vector<i64> &data) {
     auto bits = bitDecomposition(C, data, Q_MAX, true);
     equalCheck(C, data, bits, true, false);
     bitCheck(C, bits);
@@ -435,53 +462,53 @@ vector<i64> neuralNetwork::reluActFconLayer(layeredCircuit &C, const vector<i64>
     return sign_rescale;
 }
 
-vector<vector<vector<i64>>> neuralNetwork::avgPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data) {
-    // sum_vec = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1)
-    int dpool_bl = pool_bl << 1;
-    vector<i64> sum_values;
-    vector<vector<i64>> sum_vec;
-    vector<i64> sum;
-    fprintf(stderr, "max pooling in size: %lu * %lu * %lu\n", data.size(), data[0].size(), data[0][0].size());
-
-    for (int co = 0; co < channel_out; ++co) {
-        for (int x = 0; x + pool_sz <= nx_out; x += pool_stride) {
-            for (int y = 0; y + pool_sz <= ny_out; y += pool_stride) {
-                i64 tmp_data = 0;
-                sum_vec.emplace_back();
-                for (i64 tx = x; tx < x + pool_sz; ++tx)
-                    for (i64 ty = y; ty < y + pool_sz; ++ty) {
-                        tmp_data += val[data[co][x][y]];
-                        sum_vec.back().push_back(data[co][x][y]);
-                    }
-                sum_values.push_back(tmp_data);
-            }
-        }
-    }
-    auto bits = bitValueDecomposition(C, sum_values, dpool_bl, false);
-    bitCheck(C, bits);
-    auto cbits = scaledBits(C, bits, true);
-    assert(sum_vec.size() == cbits.size());
-    for (i64 i = 0; i < cbits.size(); ++i) {
-        sum_vec[i].insert(sum_vec[i].end(), cbits[i].begin() + 1, cbits[i].end());
-        sum.push_back(multiOpt(C, Add, sum_vec[i]));
-    }
-
-    // data = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1) * inv_4
-    vector<vector<vector<i64>>> new_data(channel_out);
-    for (int co = 0; co < channel_out; ++co) {
-        new_data[co].resize(new_nx_in);
-        for (int x = 0; x < new_nx_in; ++x) {
-            new_data[co][x].resize(new_ny_in);
-            for (int y = 0; y < new_ny_in; ++y) {
-                new_data[co][x][y] = updateGate(C, Mulc, sum[cubIdx(co, x, y, new_nx_in, new_ny_in)], 1LL << 59);
-            }
-        }
-    }
-    return new_data;
-}
+//vector<vector<vector<i64>>> neuralNetwork::avgPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
+//    // sum_vec = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1)
+//    int dpool_bl = pool_bl << 1;
+//    vector<i64> sum_values;
+//    vector<vector<i64>> sum_vec;
+//    vector<i64> sum;
+//    fprintf(stderr, "max pooling in size: %lu * %lu * %lu\n", data.size(), data[0].size(), data[0][0].size());
+//
+//    for (int co = 0; co < channel_out; ++co) {
+//        for (int x = 0; x + pool_sz <= nx_out; x += pool_stride) {
+//            for (int y = 0; y + pool_sz <= ny_out; y += pool_stride) {
+//                i64 tmp_data = 0;
+//                sum_vec.emplace_back();
+//                for (i64 tx = x; tx < x + pool_sz; ++tx)
+//                    for (i64 ty = y; ty < y + pool_sz; ++ty) {
+//                        tmp_data += val[data[co][x][y]];
+//                        sum_vec.back().push_back(data[co][x][y]);
+//                    }
+//                sum_values.push_back(tmp_data);
+//            }
+//        }
+//    }
+//    auto bits = bitValueDecomposition(C, sum_values, dpool_bl, false);
+//    bitCheck(C, bits);
+//    auto cbits = scaledBits(C, bits, true);
+//    assert(sum_vec.size() == cbits.size());
+//    for (i64 i = 0; i < cbits.size(); ++i) {
+//        sum_vec[i].insert(sum_vec[i].end(), cbits[i].begin() + 1, cbits[i].end());
+//        sum.push_back(multiOpt(C, Add, sum_vec[i]));
+//    }
+//
+//    // data = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1) * inv_4
+//    vector<vector<vector<i64>>> new_data(channel_out);
+//    for (int co = 0; co < channel_out; ++co) {
+//        new_data[co].resize(new_nx_in);
+//        for (int x = 0; x < new_nx_in; ++x) {
+//            new_data[co][x].resize(new_ny_in);
+//            for (int y = 0; y < new_ny_in; ++y) {
+//                new_data[co][x][y] = updateGate(C, Mulc, sum[cubIdx(co, x, y, new_nx_in, new_ny_in)], 1LL << 59);
+//            }
+//        }
+//    }
+//    return new_data;
+//}
 
 vector<vector<vector<i64>>>
-neuralNetwork::maxPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64>>> &data) {
+neuralNetwork::maxPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
     vector<i64> mx_flatten;
     vector<vector<i64>> data_mx;
     vector<i64> data_mx_flatten;
@@ -534,7 +561,17 @@ neuralNetwork::maxPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64
     fprintf(stderr, "max pooling max size: %lu\n", mx_flatten.size());
     fprintf(stderr, "max pooling max-bits size: %lu\n", mx_bits.size());
     fprintf(stderr, "max pooling max rescale size: %lu\n", rescale.size());
+    fprintf(stderr, "max origin: \n");
+    for (auto x: mx_flatten) {
+        fprintf(stderr, "%lld ", val[x]);
+    }
+    fprintf(stderr, "\n");
 
+    fprintf(stderr, "max output: \n");
+    for (auto x: rescale) {
+        fprintf(stderr, "%lld ", val[x]);
+    }
+    fprintf(stderr, "\n");
     vector<vector<vector<i64>>> new_data(channel_out);
     for (int co = 0; co < channel_out; ++co) {
         new_data[co].resize(new_nx_in);
@@ -550,7 +587,7 @@ neuralNetwork::maxPoolingLayer(layeredCircuit &C, const vector<vector<vector<i64
 }
 
 vector<i64>
-neuralNetwork::fullyConnLayer(layeredCircuit &C, const vector<i64> &data) {
+neuralNetwork::fullyConnLayer(circuit &C, const vector<i64> &data) {
     fprintf(stderr, "dense in size: %lu\n", data.size());
     vector<vector<i64>> ker(channel_out);
     for (int co = 0; co < channel_out; ++co) {
@@ -564,6 +601,8 @@ neuralNetwork::fullyConnLayer(layeredCircuit &C, const vector<i64> &data) {
     vector<i64> bias(channel_out);
     for (int co = 0; co < channel_out; ++co) {
         bias[co] = updateGate(C, Ins, 0, 0);
+        val[bias[co]] <<= SCALE;
+        C.gates[bias[co]].u <<= SCALE;
     }
     fprintf(stderr, "dense bias size in size: %lu\n", bias.size());
 
@@ -575,6 +614,10 @@ neuralNetwork::fullyConnLayer(layeredCircuit &C, const vector<i64> &data) {
         }
         tmp[channel_in] = bias[co];
         new_data[co] = multiOpt(C, Add, tmp);
+    }
+    fprintf(stderr, "output: \n");
+    for (auto x: new_data) {
+        fprintf(stderr, "%lld ", val[x]);
     }
     return new_data;
 }
@@ -633,14 +676,15 @@ void neuralNetwork::calcSizeAfterPool(const poolKernel &p) {
     new_ny_in = ((ny_out - pool_sz) >> pool_stride_bl) + 1;
 }
 
-void neuralNetwork::prepareBit(layeredCircuit &C, i64 data, i64 dcmp_id, i64 bit_shift) {
+void neuralNetwork::prepareBit(circuit &C, i64 data, i64 &dcmp_id, i64 bit_shift) {
+    if (data < 0) data = -data;
     dcmp_id = updateGate(C, Wit, (data >> bit_shift) & 1, 0);
 }
 
-void neuralNetwork::prepareSignBit(layeredCircuit &C, i64 data, i64 &dcmp_id) {
-    dcmp_id = updateGate(C, Wit, (data < 0) || ((data >> 60) & 1), 0);
+void neuralNetwork::prepareSignBit(circuit &C, i64 data, i64 &dcmp_id) {
+    dcmp_id = updateGate(C, Wit, (data < 0), 0);
 }
 
-void neuralNetwork::prepareMax(layeredCircuit &C, i64 data, i64 &max_id) {
+void neuralNetwork::prepareMax(circuit &C, i64 data, i64 &max_id) {
     max_id = updateGate(C, Wit, data, 0);
 }
