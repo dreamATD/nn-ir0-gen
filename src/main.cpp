@@ -10,7 +10,7 @@
 
 int QSIZE = 51;
 int SCALE = 10;
-string mode; // "nchw" or "hwcn"
+string mode; // "nchw" for vgg16 or "hwcn" for lenet
 
 int main(int argc, char **argv) {
     mode = argv[MODE];
