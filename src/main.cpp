@@ -14,11 +14,16 @@ string mode; // "nchw" for vgg16 or "hwcn" for lenet
 
 int main(int argc, char **argv) {
     mode = argv[MODE];
-//    vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
-    lenet model(28, 28, 1, 1, NAIVE, MAX, argv[IN]);
-//    ccnn model(4, 4, 1, 1, MAX, "");
+    string i_filename = argv[IN];
+
     circuit C;
-    model.create(C);
+    if (i_filename.find("vgg") != string::npos) {
+        vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
+        model.create(C);
+    } else if (i_filename.find("lenet") != string::npos) {
+        lenet model(28, 28, 1, 1, NAIVE, MAX, argv[IN]);
+        model.create(C);
+    }
 
     C.print(argv[INS_FILE], argv[WIT_FILE], argv[REL_FILE]);
     return 0;
