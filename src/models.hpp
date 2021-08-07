@@ -7,31 +7,46 @@
 
 #include "neuralNetwork.hpp"
 
-class vgg16: public neuralNetwork {
-
+class vgg11: public neuralNetwork {
 public:
-    explicit vgg16(i64 psize_x, i64 psize_y, i64 pchannel, i64 pparallel, convType conv_ty, poolType pool_ty,
+    explicit vgg11(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
                    const std::string &i_filename);
 
 };
 
-class vgg11: public neuralNetwork {
+class vgg13: public neuralNetwork {
 
 public:
-    explicit vgg11(i64 psize_x, i64 psize_y, i64 pchannel, i64 pparallel, convType conv_ty, poolType pool_ty,
+    explicit vgg13(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
+                   const std::string &i_filename);
+
+};
+
+class vgg16: public neuralNetwork {
+
+public:
+    explicit vgg16(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
+                   const std::string &i_filename);
+
+};
+
+class vgg19: public neuralNetwork {
+
+public:
+    explicit vgg19(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
                    const std::string &i_filename);
 
 };
 
 class lenet: public neuralNetwork {
 public:
-    explicit lenet(i64 psize_x, i64 psize_y, i64 pchannel, i64 pparallel, convType conv_ty, poolType pool_ty,
+    explicit lenet(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
                    const std::string &i_filename);
 };
 
 class ccnn: public neuralNetwork {
 public:
-    explicit ccnn(i64 psize_x, i64 psize_y, i64 pparallel, i64 pchannel, poolType pool_ty,
+    explicit ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_ty,
                   const std::string &filename);
 };
 

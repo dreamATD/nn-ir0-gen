@@ -22,17 +22,17 @@ enum convType {
 
 struct convKernel {
     convType ty;
-    i64 channel_out, channel_in, size, stride_bl, padding;
-    convKernel(convType _ty, i64 _channel_out, i64 _channel_in, i64 _size, i64 _log_stride, i64 _padding) :
+    int channel_out, channel_in, size, stride_bl, padding;
+    convKernel(convType _ty, int _channel_out, int _channel_in, int _size, int _log_stride, int _padding) :
             ty(_ty), channel_out(_channel_out), channel_in(_channel_in), size(_size), stride_bl(_log_stride), padding(_padding){}
 
-    convKernel(convType _ty, i64 _channel_out, i64 _channel_in, i64 _size):
+    convKernel(convType _ty, int _channel_out, int _channel_in, int _size):
             convKernel(_ty, _channel_out, _channel_in, _size, 0, _size >> 1) {}
 };
 
 struct fconKernel {
-    i64 channel_out, channel_in;
-    fconKernel(i64 _channel_out, i64 _channel_in):
+    int channel_out, channel_in;
+    fconKernel(int _channel_out, int _channel_in):
         channel_out(_channel_out), channel_in(_channel_in) {}
 };
 
@@ -46,8 +46,8 @@ enum actType {
 
 struct poolKernel {
     poolType ty;
-    i64 size, stride_bl;
-    poolKernel(poolType _ty, i64 _size, i64 _log_stride):
+    int size, stride_bl;
+    poolKernel(poolType _ty, int _size, int _log_stride):
             ty(_ty), size(_size), stride_bl(_log_stride) {}
 };
 

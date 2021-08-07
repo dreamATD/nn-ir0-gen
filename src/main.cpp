@@ -17,7 +17,16 @@ int main(int argc, char **argv) {
     string i_filename = argv[IN];
 
     circuit C;
-    if (i_filename.find("vgg") != string::npos) {
+    if (i_filename.find("vgg11") != string::npos) {
+        vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
+        model.create(C);
+    } else if (i_filename.find("vgg13") != string::npos) {
+        vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
+        model.create(C);
+    } else if (i_filename.find("vgg16") != string::npos) {
+        vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
+        model.create(C);
+    } else if (i_filename.find("vgg19") != string::npos) {
         vgg16 model(32, 32, 3, 1, NAIVE, MAX, argv[IN]);
         model.create(C);
     } else if (i_filename.find("lenet") != string::npos) {

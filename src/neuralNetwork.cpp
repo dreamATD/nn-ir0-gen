@@ -120,22 +120,11 @@ i64 neuralNetwork::updateGate(circuit &C, GateType ty, i64 u, i64 v, bool is_ass
         case Mulc:
             res = val[u] * v;
             break;
-//        case And:
-//            res = val[u] & val[v];
-//            break;
-//        case Xor:
-//            res = val[u] ^ val[v];
-//            break;
-//        case Not:
-//            res = ~val[u];
-//            break;
         default:
             assert(false);
     }
     C.gates.emplace_back(ty, u, v, is_assert);
     val.push_back(res);
-//    fprintf(stderr, "%lld ", val.back());
-//    if (val.size() % 200 == 0) fprintf(stderr, "\n");
     return C.gates.size() - 1;
 }
 
@@ -461,51 +450,6 @@ vector<i64> neuralNetwork::reluActFconLayer(circuit &C, const vector<i64> &data)
     auto sign_rescale = rescaleData(C, bits, true);
     return sign_rescale;
 }
-
-//vector<vector<vector<i64>>> neuralNetwork::avgPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
-//    // sum_vec = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1)
-//    int dpool_bl = pool_bl << 1;
-//    vector<i64> sum_values;
-//    vector<vector<i64>> sum_vec;
-//    vector<i64> sum;
-//    fprintf(stderr, "max pooling in size: %lu * %lu * %lu\n", data.size(), data[0].size(), data[0][0].size());
-//
-//    for (int co = 0; co < channel_out; ++co) {
-//        for (int x = 0; x + pool_sz <= nx_out; x += pool_stride) {
-//            for (int y = 0; y + pool_sz <= ny_out; y += pool_stride) {
-//                i64 tmp_data = 0;
-//                sum_vec.emplace_back();
-//                for (i64 tx = x; tx < x + pool_sz; ++tx)
-//                    for (i64 ty = y; ty < y + pool_sz; ++ty) {
-//                        tmp_data += val[data[co][x][y]];
-//                        sum_vec.back().push_back(data[co][x][y]);
-//                    }
-//                sum_values.push_back(tmp_data);
-//            }
-//        }
-//    }
-//    auto bits = bitValueDecomposition(C, sum_values, dpool_bl, false);
-//    bitCheck(C, bits);
-//    auto cbits = scaledBits(C, bits, true);
-//    assert(sum_vec.size() == cbits.size());
-//    for (i64 i = 0; i < cbits.size(); ++i) {
-//        sum_vec[i].insert(sum_vec[i].end(), cbits[i].begin() + 1, cbits[i].end());
-//        sum.push_back(multiOpt(C, Add, sum_vec[i]));
-//    }
-//
-//    // data = (data_00 + data_01 + data_10 + data_11 - 2^0 * bit_0 - 2^1 * bit_1) * inv_4
-//    vector<vector<vector<i64>>> new_data(channel_out);
-//    for (int co = 0; co < channel_out; ++co) {
-//        new_data[co].resize(new_nx_in);
-//        for (int x = 0; x < new_nx_in; ++x) {
-//            new_data[co][x].resize(new_ny_in);
-//            for (int y = 0; y < new_ny_in; ++y) {
-//                new_data[co][x][y] = updateGate(C, Mulc, sum[cubIdx(co, x, y, new_nx_in, new_ny_in)], 1LL << 59);
-//            }
-//        }
-//    }
-//    return new_data;
-//}
 
 vector<vector<vector<i64>>>
 neuralNetwork::maxPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
