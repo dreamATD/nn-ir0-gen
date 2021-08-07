@@ -506,16 +506,16 @@ neuralNetwork::maxPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &da
     fprintf(stderr, "max pooling max-bits size: %lu\n", mx_bits.size());
     fprintf(stderr, "max pooling max rescale size: %lu\n", rescale.size());
     fprintf(stderr, "max origin: \n");
-    for (auto x: mx_flatten) {
-        fprintf(stderr, "%lld ", val[x]);
-    }
-    fprintf(stderr, "\n");
-
-    fprintf(stderr, "max output: \n");
-    for (auto x: rescale) {
-        fprintf(stderr, "%lld ", val[x]);
-    }
-    fprintf(stderr, "\n");
+//    for (auto x: mx_flatten) {
+//        fprintf(stderr, "%lld ", val[x]);
+//    }
+//    fprintf(stderr, "\n");
+//
+//    fprintf(stderr, "max output: \n");
+//    for (auto x: rescale) {
+//        fprintf(stderr, "%lld ", val[x]);
+//    }
+//    fprintf(stderr, "\n");
     vector<vector<vector<i64>>> new_data(channel_out);
     for (int co = 0; co < channel_out; ++co) {
         new_data[co].resize(new_nx_in);
@@ -560,9 +560,9 @@ neuralNetwork::fullyConnLayer(circuit &C, const vector<i64> &data) {
         new_data[co] = multiOpt(C, Add, tmp);
     }
     fprintf(stderr, "output: \n");
-    for (auto x: new_data) {
-        fprintf(stderr, "%lld ", val[x]);
-    }
+//    for (auto x: new_data) {
+//        fprintf(stderr, "%lld ", val[x]);
+//    }
     return new_data;
 }
 
