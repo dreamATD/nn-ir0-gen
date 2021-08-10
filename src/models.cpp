@@ -7,234 +7,39 @@
 #include <cassert>
 #include "models.hpp"
 #include "utils.hpp"
-#undef USE_VIRGO
 
-vgg11::vgg11(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename)
+vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
+             const std::string &i_filename, const vector<int> &nn_config)
         : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
     assert(psize_x == psize_y);
     conv_section.resize(5);
 
-    int start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
+    int previous = pic_channel, start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
 
     // channel = 64 (start)
-    conv_section[0].emplace_back(conv_ty, start,  pic_channel, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 128 (start << 1)
-    conv_section[1].emplace_back(conv_ty, start << 1,  start, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 256 (start << 2)
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 1, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 2, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    if (pic_size_x == 224) {
-        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(4096, 4096);
-        full_conn.emplace_back(1000, 4096);
-    } else {
-        assert(pic_size_x == 32);
-        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(512, 512);
-        full_conn.emplace_back(10, 512);
+    for (int k = 0; k < 5; ++k) {
+        if (nn_config[k]) {
+            conv_section[k].emplace_back(conv_ty, start,  previous, kernel_size);
+            for (int i = 1; i < nn_config[k]; ++i)
+                conv_section[k].emplace_back(conv_ty, start,  start, kernel_size);
+            pool.emplace_back(pool_ty, 2, 1);
+            previous = start;
+            start <<= 1;
+        }
+        new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
+        new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
     }
-}
 
-vgg13::vgg13(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename)
-        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
-    assert(psize_x == psize_y);
-    conv_section.resize(5);
-
-    int start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
-
-    // channel = 64 (start)
-    conv_section[0].emplace_back(conv_ty, start,  pic_channel, kernel_size);
-    conv_section[0].emplace_back(conv_ty, start,  start, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 128 (start << 1)
-    conv_section[1].emplace_back(conv_ty, start << 1,  start, kernel_size);
-    conv_section[1].emplace_back(conv_ty, start << 1,  start << 1, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 256 (start << 2)
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 1, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 2, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    if (pic_size_x == 224) {
-        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(4096, 4096);
-        full_conn.emplace_back(1000, 4096);
-    } else {
-        assert(pic_size_x == 32);
-        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(512, 512);
-        full_conn.emplace_back(10, 512);
-    }
-}
-
-vgg16::vgg16(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename)
-        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
-    assert(psize_x == psize_y);
-    conv_section.resize(5);
-
-    int start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
-
-    // channel = 64 (start)
-    conv_section[0].emplace_back(conv_ty, start,  pic_channel, kernel_size);
-    conv_section[0].emplace_back(conv_ty, start, start, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 128 (start << 1)
-    conv_section[1].emplace_back(conv_ty, start << 1,  start, kernel_size);
-    conv_section[1].emplace_back(conv_ty, start << 1, start << 1, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 256 (start << 2)
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 1, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 2, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    if (pic_size_x == 224) {
-        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(4096, 4096);
-        full_conn.emplace_back(1000, 4096);
-    } else {
-        assert(pic_size_x == 32);
-        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(512, 512);
-        full_conn.emplace_back(10, 512);
-    }
-}
-
-vgg19::vgg19(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename)
-        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
-    assert(psize_x == psize_y);
-    conv_section.resize(5);
-
-    int start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
-
-    // channel = 64 (start)
-    conv_section[0].emplace_back(conv_ty, start,  pic_channel, kernel_size);
-    conv_section[0].emplace_back(conv_ty, start, start, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 128 (start << 1)
-    conv_section[1].emplace_back(conv_ty, start << 1,  start, kernel_size);
-    conv_section[1].emplace_back(conv_ty, start << 1, start << 1, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 256 (start << 2)
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 1, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    conv_section[2].emplace_back(conv_ty, start << 2, start << 2, kernel_size);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 2, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[3].emplace_back(conv_ty, start << 3, start << 3, 3);
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    // channel = 512 (start << 3)
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-    conv_section[4].emplace_back(conv_ty, start << 3, start << 3, 3);
-
-    pool.emplace_back(pool_ty, 2, 1);
-    new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
-    new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
-
-    if (pic_size_x == 224) {
-        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(4096, 4096);
-        full_conn.emplace_back(1000, 4096);
-    } else {
-        assert(pic_size_x == 32);
-        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
-        full_conn.emplace_back(512, 512);
-        full_conn.emplace_back(10, 512);
-    }
+    // if (pic_size_x == 224) {
+    //     full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
+    //     full_conn.emplace_back(4096, 4096);
+    //     full_conn.emplace_back(1000, 4096);
+    // } else {
+    //     assert(pic_size_x == 32);
+    //     full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
+    //     full_conn.emplace_back(512, 512);
+    //     full_conn.emplace_back(10, 512);
+    // }
 }
 
 ccnn::ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_ty,

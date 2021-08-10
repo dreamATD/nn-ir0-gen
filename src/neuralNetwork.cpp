@@ -60,7 +60,7 @@ vector<i64> flatten(const vector<vector<vector<i64>>> &data, const string &speci
 }
 
 void neuralNetwork::create(circuit &C) {
-    assert(pool.size() >= conv_section.size() - 1);
+    // assert(pool.size() >= conv_section.size() - 1);
 
     C.init(Q_BIT_SIZE);
     two_mul = C.two_mul.begin();
@@ -71,6 +71,7 @@ void neuralNetwork::create(circuit &C) {
 
     for (i64 i = 0; i < conv_section.size(); ++i) {
         auto &sec = conv_section[i];
+        if (sec.size() == 0) continue;
         for (i64 j = 0; j < sec.size(); ++j) {
             auto &conv = sec[j];
             refreshConvParam(new_nx_in, new_ny_in, conv);
@@ -83,15 +84,15 @@ void neuralNetwork::create(circuit &C) {
         data = maxPoolingLayer(C, data);
     }
 
-    vector<i64> data_flatten(flatten(data, mode));
-    pool_ty = NONE;
-    for (int i = 0; i < full_conn.size(); ++i) {
-        auto &fc = full_conn[i];
-        refreshFCParam(fc);
-        data_flatten = fullyConnLayer(C, data_flatten);
-        if (i == full_conn.size() - 1) break;
-        data_flatten = reluActFconLayer(C, data_flatten);
-    }
+    // vector<i64> data_flatten(flatten(data, mode));
+    // pool_ty = NONE;
+    // for (int i = 0; i < full_conn.size(); ++i) {
+    //     auto &fc = full_conn[i];
+    //     refreshFCParam(fc);
+    //     data_flatten = fullyConnLayer(C, data_flatten);
+    //     if (i == full_conn.size() - 1) break;
+    //     data_flatten = reluActFconLayer(C, data_flatten);
+    // }
 
     cerr << "finish creating circuit." << endl;
 }
