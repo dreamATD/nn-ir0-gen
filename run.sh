@@ -1,6 +1,14 @@
 #!/usr/bin/bash
 set -x
 
+# build. Remove if it has been already built.
+touch build/ && rm build -rf
+mkdir -p build
+cd build
+cmake -DCMAKE_BUILD_TYPE=Release -DPC_OPTION=hyrax_p224 ..
+make
+cd ..
+
 # Only contains convolution & relu & pooling (no dense layer).
 # "nchw" means channel_out * channel_in * height * weight refer to kernel
 # or number_of_pic * channel_in * height * weight refer to picture data
