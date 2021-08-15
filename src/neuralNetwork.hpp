@@ -104,6 +104,7 @@ protected:
     vector<i64> equalCheck(circuit &C, const vector<i64> &data, const vector<vector<i64>> &bits, bool has_sign, bool need_neg);
     vector<vector<i64>> bitCheck(circuit &C, const vector<vector<i64>> &bits);
     vector<i64> rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign);
+    vector<i64> rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign, int T);
     vector<vector<i64>> bitDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign);
     vector<vector<i64>> bitValueDecomposition(circuit &C, const vector<i64> &data, int nbits, bool has_sign);
     vector<vector<i64>> scaledBits(circuit &C, const vector<vector<i64>> &bits, bool neg);

@@ -34,28 +34,38 @@ void circuit::print(char *ins_file, char *wit_file, char *rel_file) {
         << "short_witness\n"
         << "@begin\n";
 
+    fprintf(stderr, "the number of gates: %lu\n", gates.size());
+    
+    u64 n_add_gates = 0, n_addc_gates = 0, n_mul_gates = 0, n_mulc_gates = 0;
+    u64 n_ins_gates = 0, n_wit_gates = 0;
     for (i64 g = 0; g < gates.size(); ++g) {
         auto &gate = gates[g];
         switch (gate.ty) {
             case Ins:
                 ins << string_format("< %lld >;\n", gate.u);
                 rel << string_format("$%lld<-@instance;\n", g);
+                ++n_ins_gates;
                 break;
             case Wit:
                 wit << string_format("< %lld >;\n", gate.u);
                 rel << string_format("$%lld<-@short_witness;\n", g);
+                ++n_wit_gates;
                 break;
             case Add:
                 rel << string_format("$%lld <- @add($%lld,$%lld);\n", g, gate.u, gate.v);
+                ++n_add_gates;
                 break;
             case Mul:
                 rel << string_format("$%lld <- @mul($%lld,$%lld);\n", g, gate.u, gate.v);
+                ++n_mul_gates;
                 break;
             case Addc:
                 rel << string_format("$%lld <- @addc($%lld,< %lld >);\n", g, gate.u, gate.v);
+                ++n_addc_gates;
                 break;
             case Mulc:
                 rel << string_format("$%lld <- @mulc($%lld,< %lld >);\n", g, gate.u, gate.v);
+                ++n_mulc_gates;
                 break;
             case Xor:
                 rel << string_format("$%lld <- @xor($%lld,$%lld);\n", g, gate.u, gate.v);
@@ -76,4 +86,11 @@ void circuit::print(char *ins_file, char *wit_file, char *rel_file) {
     ins.close();
     wit.close();
     rel.close();
+
+    fprintf(stderr, "# add  = %llu\n", n_add_gates);
+    fprintf(stderr, "# mul  = %llu\n", n_mul_gates);
+    fprintf(stderr, "# addc = %llu\n", n_addc_gates);
+    fprintf(stderr, "# mulc = %llu\n", n_mulc_gates);
+    fprintf(stderr, "# ins  = %llu\n", n_ins_gates);
+    fprintf(stderr, "# wit  = %llu\n", n_wit_gates);
 }
