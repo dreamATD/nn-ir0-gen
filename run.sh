@@ -5,7 +5,7 @@ set -x
 # touch build/ && rm build -rf
 # mkdir -p build
 cd build
-cmake -DCMAKE_BUILD_TYPE=Release -DPC_OPTION=hyrax_p224 ..
+cmake -DCMAKE_BUILD_TYPE=Release ..
 make
 cd ..
 
