@@ -60,7 +60,7 @@ vector<i64> flatten(const vector<vector<vector<i64>>> &data, const string &speci
 }
 
 void neuralNetwork::create(circuit &C) {
-    assert(pool.size() >= conv_section.size() - 1);
+    // assert(pool.size() >= conv_section.size() - 1);
 
     C.init(Q_BIT_SIZE);
     two_mul = C.two_mul.begin();
@@ -71,27 +71,28 @@ void neuralNetwork::create(circuit &C) {
 
     for (i64 i = 0; i < conv_section.size(); ++i) {
         auto &sec = conv_section[i];
+        if (sec.size() == 0) continue;
         for (i64 j = 0; j < sec.size(); ++j) {
             auto &conv = sec[j];
             refreshConvParam(new_nx_in, new_ny_in, conv);
             pool_ty = i < pool.size() && j == sec.size() - 1 ? pool[i].ty : NONE;
             data = naiveConvLayer(C, data);
-            if (j != sec.size() - 1)
+            if (pool_ty != MAX || j != sec.size() - 1)
                 data = reluActConvLayer(C, data);
         }
         calcSizeAfterPool(pool[i]);
-        data = maxPoolingLayer(C, data);
+        data = pool_ty == MAX ? maxPoolingLayer(C, data) : avgPoolingLayer(C, data);
     }
 
-    vector<i64> data_flatten(flatten(data, mode));
-    pool_ty = NONE;
-    for (int i = 0; i < full_conn.size(); ++i) {
-        auto &fc = full_conn[i];
-        refreshFCParam(fc);
-        data_flatten = fullyConnLayer(C, data_flatten);
-        if (i == full_conn.size() - 1) break;
-        data_flatten = reluActFconLayer(C, data_flatten);
-    }
+    // vector<i64> data_flatten(flatten(data, mode));
+    // pool_ty = NONE;
+    // for (int i = 0; i < full_conn.size(); ++i) {
+    //     auto &fc = full_conn[i];
+    //     refreshFCParam(fc);
+    //     data_flatten = fullyConnLayer(C, data_flatten);
+    //     if (i == full_conn.size() - 1) break;
+    //     data_flatten = reluActFconLayer(C, data_flatten);
+    // }
 
     cerr << "finish creating circuit." << endl;
 }
@@ -205,6 +206,53 @@ vector<vector<i64>> neuralNetwork::bitCheck(circuit &C, const vector<vector<i64>
 }
 
 vector<i64> neuralNetwork::rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign) {
+    // rescale: -sign_bit
+    i64 size = bits.size();
+    vector<i64> neg_sign_bit(size);
+    for (i64 i = 0; i < size; ++i) {
+        neg_sign_bit[i] = updateGate(C, Mulc, bits[i][0], -1);
+    }
+
+    // rescale: (-sign_bit + 1)
+    vector<i64> neg_sign_bit_1(size);
+    for (i64 i = 0; i < size; ++i) {
+        neg_sign_bit_1[i] = updateGate(C, Addc, neg_sign_bit[i], 1);
+    }
+
+    // rescale: 2^0 * data_bit_T + ... + 2^{Q_MAX-2-T} * data_bit_{Q_MAX-2}
+    vector<i64> rescale(size);
+    for (i64 i = 0; i < size; ++i) {
+        vector<i64> tmp(Q_MAX - 1 - T);
+        for (int j = 1; j < Q_MAX - T; ++j) {
+            tmp[j - 1] = updateGate(C, Mulc, bits[i][j], two_mul[Q_MAX - j - T - 1]);
+//            fprintf(stderr, "%lld %lld %lld %d\n", val[tmp[j]], val[bits[i][j]], two_mul[Q_MAX - j - T - 1], Q_MAX - j - T - 1);
+        }
+        rescale[i] = multiOpt(C, Add, tmp);
+    }
+
+    if (!has_sign) {
+//        fprintf(stderr, "rescale: \n");
+//        for (auto x: rescale) {
+//            fprintf(stderr, "%lld ", val[x]);
+//        }
+//        fprintf(stderr, "\n");
+        return rescale;
+    }
+    vector<i64> sign_rescale(size);
+
+    // rescale: (-sign_bit + 1) (2^0 * data_bit_T + ... + 2^{Q_MAX-2-T} * data_bit_{Q_MAX-2})
+    for (i64 i = 0; i < size; ++i)
+        sign_rescale[i] = updateGate(C, Mul, neg_sign_bit_1[i], rescale[i]);
+
+//    fprintf(stderr, "rescale: \n");
+//    for (auto x: sign_rescale) {
+//        fprintf(stderr, "%lld ", val[x]);
+//    }
+//    fprintf(stderr, "\n");
+    return sign_rescale;
+}
+
+vector<i64> neuralNetwork::rescaleData(circuit &C, const vector<vector<i64>> &bits, bool has_sign, int T) {
     // rescale: -sign_bit
     i64 size = bits.size();
     vector<i64> neg_sign_bit(size);
@@ -472,6 +520,50 @@ vector<i64> neuralNetwork::reluActFconLayer(circuit &C, const vector<i64> &data)
     bitCheck(C, bits);
     auto sign_rescale = rescaleData(C, bits, true);
     return sign_rescale;
+}
+
+// Fix for size = 2 x 2
+vector<vector<vector<i64>>>
+neuralNetwork::avgPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
+    fprintf(stderr, "avg pooling in size: %lu %lu %lu\n", data.size(), data[0].size(), data[0][0].size());
+    vector<vector<i64>> sum_flatten_vec;
+    vector<i64> sum_flatten;
+
+    // sum of data with the same pooling kernel
+    for (int co = 0; co < channel_out; ++co) {
+        for (int x = 0; x + pool_sz <= nx_out; x += pool_stride)
+            for (int y = 0; y + pool_sz <= ny_out; y += pool_stride) {
+                sum_flatten_vec.emplace_back();
+                for (i64 tx = x; tx < x + pool_sz; ++tx)
+                    for (i64 ty = y; ty < y + pool_sz; ++ty) {
+                        sum_flatten_vec.back().push_back(data[co][tx][ty]);
+                    }
+            }
+    }
+    for (auto &x: sum_flatten_vec) 
+        sum_flatten.emplace_back(multiOpt(C, Add, x, false));
+
+    fprintf(stderr, "avg pooling flatten size: %lu\n", sum_flatten.size());
+
+    auto data_sum_bits = bitDecomposition(C, sum_flatten, Q_MAX - 1, false);
+    fprintf(stderr, "avg pooling bits size: %lu * %lu\n", data_sum_bits.size(), data_sum_bits[0].size());
+
+    bitCheck(C, data_sum_bits);
+    equalCheck(C, sum_flatten, data_sum_bits, false, true);
+    auto rescale = rescaleData(C, data_sum_bits, false, T + 2);
+    fprintf(stderr, "avg pooling rescale size: %lu\n", rescale.size());
+
+    vector<vector<vector<i64>>> new_data(channel_out);
+    for (int co = 0; co < channel_out; ++co) {
+        new_data[co].resize(new_nx_in);
+        for (int x = 0; x < new_nx_in; ++x) {
+            new_data[co][x].resize(new_ny_in);
+            for (int y = 0; y < new_ny_in; ++y) {
+                new_data[co][x][y] = rescale[cubIdx(co, x, y, new_nx_in, new_ny_in)];
+            }
+        }
+    }
+    return new_data;
 }
 
 vector<vector<vector<i64>>>

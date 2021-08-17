@@ -7,34 +7,10 @@
 
 #include "neuralNetwork.hpp"
 
-class vgg11: public neuralNetwork {
+class vgg: public neuralNetwork {
 public:
-    explicit vgg11(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-                   const std::string &i_filename);
-
-};
-
-class vgg13: public neuralNetwork {
-
-public:
-    explicit vgg13(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-                   const std::string &i_filename);
-
-};
-
-class vgg16: public neuralNetwork {
-
-public:
-    explicit vgg16(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-                   const std::string &i_filename);
-
-};
-
-class vgg19: public neuralNetwork {
-
-public:
-    explicit vgg19(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-                   const std::string &i_filename);
+    explicit vgg(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
+                   const std::string &i_filename, const vector<int> &nn_config);
 
 };
 
