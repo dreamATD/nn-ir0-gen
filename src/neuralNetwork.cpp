@@ -415,6 +415,29 @@ neuralNetwork::naiveConvLayer(circuit &C, const vector<vector<vector<i64>>> &dat
     return new_data;
 }
 
+vector<vector<vector<i64>>> neuralNetwork::sqrActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
+    // flatten
+    auto lst = flatten(data, "");
+    auto bits = bitDecomposition(C, lst, Q_MAX, true);
+    fprintf(stderr, "relu data in size: %lu\n", lst.size());
+    fprintf(stderr, "relu data bits size: %lu * %lu\n", bits.size(), bits[0].size());
+
+    vector<vector<vector<i64>>> new_data(channel_out);
+    for (int co = 0; co < channel_out; ++co) {
+        new_data[co].resize(nx_out);
+        for (int x = 0; x < nx_out; ++x) {
+            new_data[co][x].resize(ny_out);
+            for (int y = 0; y < ny_out; ++ y) {
+                i64 idx = cubIdx(co, x, y, nx_out, ny_out);
+                new_data[co][x][y] = updateGate(C, Mul, data[co][x][y], data[co][x][y]);
+            }
+        }
+    }
+
+    fprintf(stderr, "naiveConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
+    return new_data;
+}
+
 vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
     // flatten
     auto lst = flatten(data, "");
