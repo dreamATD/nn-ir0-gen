@@ -8,13 +8,13 @@
 #include "models.hpp"
 #include "utils.hpp"
 
-vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename, const vector<int> &nn_config)
-        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
+vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, convType conv_ty, poolType pool_ty,
+         const std::string &i_filename, const vector<int> &nn_config)
+        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, act_ty, i_filename) {
     assert(psize_x == psize_y);
     conv_section.resize(5);
 
-    int previous = pic_channel, start = 16, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
+    int previous = pic_channel, start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
 
     // channel = 64 (start)
     for (int k = 0; k < 5; ++k) {
@@ -43,7 +43,7 @@ vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty
 }
 
 ccnn::ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_ty,
-           const std::string &filename) : neuralNetwork(psize_x, psize_y, pchannel, pparallel, filename) {
+           const std::string &filename) : neuralNetwork(psize_x, psize_y, pchannel, pparallel, act_ty, filename) {
     conv_section.resize(1);
 
     conv_section[0].emplace_back(NAIVE_FAST, 2,  pchannel, 3, 0, 0);
@@ -60,7 +60,7 @@ ccnn::ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_
 
 lenet::lenet(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
              const std::string &i_filename)
-        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, i_filename) {
+        : neuralNetwork(psize_x, psize_y, pchannel, pparallel, act_ty, i_filename) {
 
     conv_section.emplace_back();
     conv_section[0].emplace_back(conv_ty, 6,  pchannel, 5, 0, 2);

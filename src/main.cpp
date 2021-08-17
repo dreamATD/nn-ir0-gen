@@ -23,34 +23,34 @@ int main(int argc, char **argv) {
 
     circuit C;
     if (strcmp(argv[IN], "vgg1") == 0) {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], {1, 0, 0, 0, 0});
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], {1, 0, 0, 0, 0});
         model.create(C);
     } else if (strcmp(argv[IN], "vgg2") == 0) {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], {1, 1, 0, 0, 0});
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], {1, 1, 0, 0, 0});
         model.create(C);
     } else if (strcmp(argv[IN], "vgg3") == 0) {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], {1, 1, 1, 0, 0});
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], {1, 1, 1, 0, 0});
         model.create(C);
     } else if (strcmp(argv[IN], "vgg4") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], {1, 1, 1, 1, 0});
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], {1, 1, 1, 1, 0});
         model.create(C);
     } else if (strcmp(argv[IN], "vgg5") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], {1, 1, 1, 1, 1});
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], {1, 1, 1, 1, 1});
         model.create(C);
     } else if (strcmp(argv[IN], "vgg11") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], vgg11_config);
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], vgg11_config);
         model.create(C);
     } else if (strcmp(argv[IN], "vgg13") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], vgg13_config);
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], vgg13_config);
         model.create(C);
     } else if (strcmp(argv[IN], "vgg16") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], vgg16_config);
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], vgg16_config);
         model.create(C);
     } else if (strcmp(argv[IN], "vgg19") == 0)  {
-        vgg model(32, 32, 3, 1, NAIVE, MAX, argv[IN], vgg19_config);
+        vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], vgg19_config);
         model.create(C);
     } else if (strcmp(argv[IN], "lenet") == 0) {
-        lenet model(28, 28, 1, 1, NAIVE, MAX, argv[IN]);
+        lenet model(28, 28, 1, 1, NAIVE, SUM, argv[IN]);
         model.create(C);
     }
 

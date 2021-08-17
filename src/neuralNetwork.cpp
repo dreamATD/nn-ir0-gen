@@ -15,17 +15,19 @@ using std::ifstream;
 using std::ofstream;
 
 ifstream in;
-neuralNetwork::neuralNetwork(int psize_x, int psize_y, int pchannel, int pparallel, const string &i_filename) :
+neuralNetwork::neuralNetwork(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty,
+                             const string &i_filename) :
         pic_size_x(psize_x), pic_size_y(psize_y), pic_channel(pchannel), pic_parallel(pparallel),
-        T(SCALE), Q_MAX(SCALE + QSIZE) {
+        T(SCALE), Q_MAX(SCALE + QSIZE), act_ty(act_ty) {
     in.open(i_filename);
     if (!in.is_open())
         fprintf(stderr, "Can't find the input file. \n");
 }
 
 neuralNetwork::neuralNetwork(int psize, int pchannel, int pparallel, int kernel_size, int sec_size, int fc_size,
-                             int start_channel, convType conv_ty, poolType pool_ty)
-        : neuralNetwork(psize, psize, pchannel, pparallel, "") {
+                             int start_channel,
+                             actType act_ty, convType conv_ty, poolType pool_ty)
+        : neuralNetwork(psize, psize, pchannel, pparallel, act_ty, "") {
     pool_bl = 2;
     pool_stride_bl = pool_bl >> 1;
     conv_section.resize(sec_size);
@@ -78,10 +80,11 @@ void neuralNetwork::create(circuit &C) {
             pool_ty = i < pool.size() && j == sec.size() - 1 ? pool[i].ty : NONE;
             data = naiveConvLayer(C, data);
             if (pool_ty != MAX || j != sec.size() - 1)
-                data = reluActConvLayer(C, data);
+                data = act_ty == SQR_ACT ? sqrActConvLayer(C, data) : reluActConvLayer(C, data);
         }
         calcSizeAfterPool(pool[i]);
-        data = pool_ty == MAX ? maxPoolingLayer(C, data) : avgPoolingLayer(C, data);
+        data = pool_ty == MAX ? maxPoolingLayer(C, data) :
+               pool_ty == AVG ? avgPoolingLayer(C, data) : sumPoolingLayer(C, data);
     }
 
     // vector<i64> data_flatten(flatten(data, mode));
@@ -465,10 +468,7 @@ neuralNetwork::naiveConvLayer(circuit &C, const vector<vector<vector<i64>>> &dat
 
 vector<vector<vector<i64>>> neuralNetwork::sqrActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
     // flatten
-    auto lst = flatten(data, "");
-    auto bits = bitDecomposition(C, lst, Q_MAX, true);
-    fprintf(stderr, "relu data in size: %lu\n", lst.size());
-    fprintf(stderr, "relu data bits size: %lu * %lu\n", bits.size(), bits[0].size());
+    fprintf(stderr, "sqr data in size: %lu %lu %lu\n", data.size(), data[0].size(), data[0][0].size());
 
     vector<vector<vector<i64>>> new_data(channel_out);
     for (int co = 0; co < channel_out; ++co) {
@@ -476,13 +476,12 @@ vector<vector<vector<i64>>> neuralNetwork::sqrActConvLayer(circuit &C, const vec
         for (int x = 0; x < nx_out; ++x) {
             new_data[co][x].resize(ny_out);
             for (int y = 0; y < ny_out; ++ y) {
-                i64 idx = cubIdx(co, x, y, nx_out, ny_out);
                 new_data[co][x][y] = updateGate(C, Mul, data[co][x][y], data[co][x][y]);
             }
         }
     }
 
-    fprintf(stderr, "naiveConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
+    fprintf(stderr, "sqrActConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
     return new_data;
 }
 
@@ -510,7 +509,7 @@ vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(circuit &C, const ve
         }
     }
 
-    fprintf(stderr, "naiveConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
+    fprintf(stderr, "reluActConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
     return new_data;
 }
 
@@ -521,6 +520,42 @@ vector<i64> neuralNetwork::reluActFconLayer(circuit &C, const vector<i64> &data)
     auto sign_rescale = rescaleData(C, bits, true);
     return sign_rescale;
 }
+
+vector<vector<vector<i64>>>
+neuralNetwork::sumPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data) {
+    fprintf(stderr, "sum pooling in size: %lu %lu %lu\n", data.size(), data[0].size(), data[0][0].size());
+    vector<vector<i64>> sum_flatten_vec;
+    vector<i64> sum_flatten;
+
+    // sum of data with the same pooling kernel
+    for (int co = 0; co < channel_out; ++co) {
+        for (int x = 0; x + pool_sz <= nx_out; x += pool_stride)
+            for (int y = 0; y + pool_sz <= ny_out; y += pool_stride) {
+                sum_flatten_vec.emplace_back();
+                for (i64 tx = x; tx < x + pool_sz; ++tx)
+                    for (i64 ty = y; ty < y + pool_sz; ++ty) {
+                        sum_flatten_vec.back().push_back(data[co][tx][ty]);
+                    }
+            }
+    }
+    for (auto &x: sum_flatten_vec)
+        sum_flatten.emplace_back(multiOpt(C, Add, x, false));
+
+    fprintf(stderr, "sum pooling output flatten size: %lu\n", sum_flatten.size());
+
+    vector<vector<vector<i64>>> new_data(channel_out);
+    for (int co = 0; co < channel_out; ++co) {
+        new_data[co].resize(new_nx_in);
+        for (int x = 0; x < new_nx_in; ++x) {
+            new_data[co][x].resize(new_ny_in);
+            for (int y = 0; y < new_ny_in; ++y) {
+                new_data[co][x][y] = sum_flatten[cubIdx(co, x, y, new_nx_in, new_ny_in)];
+            }
+        }
+    }
+    return new_data;
+}
+
 
 // Fix for size = 2 x 2
 vector<vector<vector<i64>>>

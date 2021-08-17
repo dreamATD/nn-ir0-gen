@@ -20,6 +20,14 @@ enum convType {
     FFT, NAIVE, NAIVE_FAST
 };
 
+enum poolType {
+    AVG, MAX, SUM, NONE
+};
+
+enum actType {
+    SQR_ACT, RELU_ACT
+};
+
 struct convKernel {
     convType ty;
     int channel_out, channel_in, size, stride_bl, padding;
@@ -36,14 +44,6 @@ struct fconKernel {
         channel_out(_channel_out), channel_in(_channel_in) {}
 };
 
-enum poolType {
-    AVG, MAX, NONE
-};
-
-enum actType {
-    RELU_ACT
-};
-
 struct poolKernel {
     poolType ty;
     int size, stride_bl;
@@ -54,9 +54,10 @@ struct poolKernel {
 
 class neuralNetwork {
 public:
-    explicit neuralNetwork(int psize_x, int psize_y, int pchannel, int pparallel, const string &i_filename);
-    neuralNetwork(int psize, int pchannel, int pparallel, int kernel_size, int sec_size, int fc_size,
-                  int start_channel, convType conv_ty, poolType pool_ty);
+    explicit neuralNetwork(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty,
+                           const string &i_filename);
+    neuralNetwork(int psize, int pchannel, int pparallel, int kernel_size, int sec_size, int fc_size, int start_channel,
+                  actType act_ty, convType conv_ty, poolType pool_ty);
     void create(circuit &C);
 
 protected:
@@ -76,6 +77,7 @@ protected:
 
     vector<vector<convKernel>> conv_section;
     vector<poolKernel> pool;
+    actType act_ty;
     poolType pool_ty;
     i64 pool_bl, pool_sz;
     i64 pool_stride_bl, pool_stride;
