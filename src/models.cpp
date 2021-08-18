@@ -14,7 +14,7 @@ vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, 
     assert(psize_x == psize_y);
     conv_section.resize(5);
 
-    int previous = pic_channel, start = 64, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
+    int previous = pic_channel, start = 16, kernel_size = 3, new_nx = pic_size_x, new_ny = pic_size_y;
 
     // channel = 64 (start)
     for (int k = 0; k < 5; ++k) {
@@ -30,16 +30,16 @@ vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, 
         new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
     }
 
-    // if (pic_size_x == 224) {
-    //     full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
-    //     full_conn.emplace_back(4096, 4096);
-    //     full_conn.emplace_back(1000, 4096);
-    // } else {
-    //     assert(pic_size_x == 32);
-    //     full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
-    //     full_conn.emplace_back(512, 512);
-    //     full_conn.emplace_back(10, 512);
-    // }
+    if (pic_size_x == 224) {
+        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
+        full_conn.emplace_back(4096, 4096);
+        full_conn.emplace_back(1000, 4096);
+    } else {
+        assert(pic_size_x == 32);
+        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
+        full_conn.emplace_back(512, 512);
+        full_conn.emplace_back(10, 512);
+    }
 }
 
 ccnn::ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_ty,

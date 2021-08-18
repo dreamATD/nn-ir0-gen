@@ -87,15 +87,15 @@ void neuralNetwork::create(circuit &C) {
                pool_ty == AVG ? avgPoolingLayer(C, data) : sumPoolingLayer(C, data);
     }
 
-    // vector<i64> data_flatten(flatten(data, mode));
-    // pool_ty = NONE;
-    // for (int i = 0; i < full_conn.size(); ++i) {
-    //     auto &fc = full_conn[i];
-    //     refreshFCParam(fc);
-    //     data_flatten = fullyConnLayer(C, data_flatten);
-    //     if (i == full_conn.size() - 1) break;
-    //     data_flatten = reluActFconLayer(C, data_flatten);
-    // }
+    vector<i64> data_flatten(flatten(data, mode));
+    pool_ty = NONE;
+    for (int i = 0; i < full_conn.size(); ++i) {
+        auto &fc = full_conn[i];
+        refreshFCParam(fc);
+        data_flatten = fullyConnLayer(C, data_flatten);
+        if (i == full_conn.size() - 1) break;
+        data_flatten = reluActFconLayer(C, data_flatten);
+    }
 
     cerr << "finish creating circuit." << endl;
 }
