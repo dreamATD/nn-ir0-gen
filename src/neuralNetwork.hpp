@@ -99,6 +99,7 @@ protected:
     vector<vector<vector<i64>>> naiveConvLayer(circuit &C, const vector<vector<vector<i64>>> &data);
     vector<vector<vector<i64>>> reluActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data);
     vector<vector<vector<i64>>> sqrActConvLayer(circuit &C, const vector<vector<vector<i64>>> &data);
+    vector<i64> sqrActFconLayer(circuit &C, const vector<i64> &data);
     vector<i64> reluActFconLayer(circuit &C, const vector<i64> &data);
     vector<vector<vector<i64>>> sumPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data);
     vector<vector<vector<i64>>> avgPoolingLayer(circuit &C, const vector<vector<vector<i64>>> &data);

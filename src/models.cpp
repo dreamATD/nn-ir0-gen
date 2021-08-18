@@ -24,19 +24,19 @@ vgg::vgg(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, 
                 conv_section[k].emplace_back(conv_ty, start,  start, kernel_size);
             pool.emplace_back(pool_ty, 2, 1);
             previous = start;
-            start <<= 1;
+            if (k < 3) start <<= 1;
         }
         new_nx = ((new_nx - pool.back().size) >> pool.back().stride_bl) + 1;
         new_ny = ((new_ny - pool.back().size) >> pool.back().stride_bl) + 1;
     }
 
     if (pic_size_x == 224) {
-        full_conn.emplace_back(4096, new_nx * new_ny * (start << 3));
+        full_conn.emplace_back(4096, new_nx * new_ny * previous);
         full_conn.emplace_back(4096, 4096);
         full_conn.emplace_back(1000, 4096);
     } else {
         assert(pic_size_x == 32);
-        full_conn.emplace_back(512, new_nx * new_ny * (start << 3));
+        full_conn.emplace_back(512, new_nx * new_ny * previous);
         full_conn.emplace_back(512, 512);
         full_conn.emplace_back(10, 512);
     }

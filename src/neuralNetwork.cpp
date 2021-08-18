@@ -94,7 +94,7 @@ void neuralNetwork::create(circuit &C) {
         refreshFCParam(fc);
         data_flatten = fullyConnLayer(C, data_flatten);
         if (i == full_conn.size() - 1) break;
-        data_flatten = reluActFconLayer(C, data_flatten);
+        data_flatten = act_ty == SQR_ACT ? sqrActFconLayer(C, data_flatten) : reluActFconLayer(C, data_flatten);
     }
 
     cerr << "finish creating circuit." << endl;
@@ -511,6 +511,12 @@ vector<vector<vector<i64>>> neuralNetwork::reluActConvLayer(circuit &C, const ve
 
     fprintf(stderr, "reluActConvLayer: %lu * %lu * %lu\n", new_data.size(), new_data[0].size(), new_data[0][0].size());
     return new_data;
+}
+
+vector<i64> neuralNetwork::sqrActFconLayer(circuit &C, const vector<i64> &data) {
+    vector<i64> sqr_data;
+    for (auto &x: data) sqr_data.push_back(updateGate(C, Mul, x, x));
+    return sqr_data;
 }
 
 vector<i64> neuralNetwork::reluActFconLayer(circuit &C, const vector<i64> &data) {
