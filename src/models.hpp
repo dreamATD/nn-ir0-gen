@@ -17,8 +17,8 @@ public:
 
 class lenet: public neuralNetwork {
 public:
-    explicit lenet(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-                   const std::string &i_filename);
+    explicit lenet(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, convType conv_ty,
+                   poolType pool_ty, const std::string &i_filename);
 };
 
 class ccnn: public neuralNetwork {

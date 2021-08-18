@@ -58,8 +58,8 @@ ccnn::ccnn(int psize_x, int psize_y, int pparallel, int pchannel, poolType pool_
 //    pool.emplace_back(pool_ty, 2, 1);
 }
 
-lenet::lenet(int psize_x, int psize_y, int pchannel, int pparallel, convType conv_ty, poolType pool_ty,
-             const std::string &i_filename)
+lenet::lenet(int psize_x, int psize_y, int pchannel, int pparallel, actType act_ty, convType conv_ty,
+             poolType pool_ty, const std::string &i_filename)
         : neuralNetwork(psize_x, psize_y, pchannel, pparallel, act_ty, i_filename) {
 
     conv_section.emplace_back();

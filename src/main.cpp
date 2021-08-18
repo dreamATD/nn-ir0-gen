@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
         vgg model(32, 32, 3, 1, SQR_ACT, NAIVE, SUM, argv[IN], vgg19_config);
         model.create(C);
     } else if (strcmp(argv[IN], "lenet") == 0) {
-        lenet model(28, 28, 1, 1, NAIVE, SUM, argv[IN]);
+        lenet model(28, 28, 1, 1, SQR_ACT, NAIVE, SUM, argv[IN]);
         model.create(C);
     }
 
