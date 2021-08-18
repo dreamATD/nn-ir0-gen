@@ -35,7 +35,7 @@ void circuit::print(char *ins_file, char *wit_file, char *rel_file) {
         << "@begin\n";
 
     fprintf(stderr, "the number of gates: %lu\n", gates.size());
-    
+
     u64 n_add_gates = 0, n_addc_gates = 0, n_mul_gates = 0, n_mulc_gates = 0;
     u64 n_ins_gates = 0, n_wit_gates = 0;
     for (i64 g = 0; g < gates.size(); ++g) {
